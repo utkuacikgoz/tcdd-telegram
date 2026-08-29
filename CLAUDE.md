@@ -77,8 +77,10 @@ All config is environment variables, loaded in
 
 ## Conventions
 
-- **No Claude attribution.** Do not add `Co-Authored-By: Claude` trailers to
-  commits or "Generated with Claude Code" to PR bodies.
+- **No AI attribution.** Commits are authored by the repository owner, and nothing
+  in git may say otherwise. No `Co-Authored-By: Claude`/`Codex` trailer, no
+  `Claude-Session:` trailer, no "Generated with Claude Code" line in a commit or PR
+  body, and no `claude/…` or `codex/…` branch name.
 - Land changes via a branch → PR → squash-merge, not direct commits to `main`.
 - `src/` layout; install editable (`pip install -e '.[dev]'`). Async throughout.
 - **Config is centralized** in `config.py` — add a setting there, don't scatter
