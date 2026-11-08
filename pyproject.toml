@@ -14,16 +14,16 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=9.1.1",
-    "pytest-asyncio>=1.4.0",
+    "pytest-asyncio>=1.4.1.post1",
     "pytest-cov>=7.1.0",
     "fakeredis>=2.40.0",
-    "ruff>=0.16.7",
+    "ruff>=0.17.3",
     "bandit>=1.9.4",
     "pip-audit>=2.10.1",
 ]
 
 [build-system]
-requires = ["setuptools>=84.0.0"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
