@@ -11,20 +11,20 @@
 # Regenerate whenever pyproject.toml's dependency bounds change (resolve in a
 # clean venv or read it back off a fresh prod deploy, then repin here).
 aiolimiter==1.2.1
-anyio==4.15.1
+anyio==4.16.0
 APScheduler==3.11.3
-certifi==2026.7.22
+certifi==2026.10.23
 cffi==2.1.1
-curl_cffi==0.16.3
+curl_cffi==0.17.0
 h11==0.16.0
-hiredis==3.4.1
+hiredis==3.5.0
 httpcore==1.0.9
 httpx==0.28.1
-idna==3.19
-pycparser==3.0
-python-dotenv==1.2.3
+idna==3.20
+pycparser==3.12
+python-dotenv==1.2.4
 python-telegram-bot[job-queue,rate-limiter]==22.8
 RapidFuzz==3.14.6
 redis[hiredis]==8.1.0
 typing_extensions==4.16.0
-tzlocal==5.4.4
+tzlocal==5.4.5
