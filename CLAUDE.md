@@ -81,6 +81,12 @@ All config is environment variables, loaded in
   in git may say otherwise. No `Co-Authored-By: Claude`/`Codex` trailer, no
   `Claude-Session:` trailer, no "Generated with Claude Code" line in a commit or PR
   body, and no `claude/…` or `codex/…` branch name.
+- **Commit identity.** Every commit's author _and_ committer is
+  `Utku <55285576+utkuacikgoz@users.noreply.github.com>`. Set it before committing
+  (`git config user.name "Utku"`; `git config user.email
+  "55285576+utkuacikgoz@users.noreply.github.com"`). If a commit lands under any
+  other identity on a feature branch, rewrite it (amend / rebase + force-push)
+  before merging.
 - Land changes via a branch → PR → squash-merge, not direct commits to `main`.
 - `src/` layout; install editable (`pip install -e '.[dev]'`). Async throughout.
 - **Config is centralized** in `config.py` — add a setting there, don't scatter
