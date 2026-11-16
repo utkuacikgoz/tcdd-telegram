@@ -17,7 +17,7 @@ from telegram.ext import (
 )
 
 from .. import format as fmt
-from ..tcdd import TcddBackend
+from ..tcdd import CaptchaRequiredError, TcddBackend
 from .common import (
     STATIC_ROUTES,
     date_picker_kb,
@@ -176,6 +176,9 @@ def build_trip_conversation(
                 from_name=ud["from_name"], to_name=ud["to_name"],
                 include_unavailable=True,
             )
+        except CaptchaRequiredError:
+            await q.edit_message_text(fmt.SEARCH_UNAVAILABLE)
+            return ConversationHandler.END
         except Exception:
             log.exception("train picker fetch failed for %s", day)
             trains = []
@@ -295,6 +298,9 @@ async def _finish_search(
                 from_name=ud["from_name"],
                 to_name=ud["to_name"],
             )
+        except CaptchaRequiredError:
+            await msg.reply_text(fmt.SEARCH_UNAVAILABLE, disable_web_page_preview=True)
+            break
         except Exception:
             log.exception("search failed for %s", d)
             await msg.reply_text(

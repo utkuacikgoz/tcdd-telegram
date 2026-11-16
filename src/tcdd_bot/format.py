@@ -8,6 +8,14 @@ from urllib.parse import quote
 from .store import Alarm
 from .tcdd import TrainResult
 
+# Shown when TCDD demands a captcha (CaptchaRequiredError): live search and
+# alarm checks cannot work until TCDD lifts it.
+SEARCH_UNAVAILABLE = (
+    "⚠️ TCDD sefer sorgusuna güvenlik doğrulaması (captcha) ekledi; "
+    "bot şu an canlı arama yapamıyor. Alarmlar da bu süre boyunca tetiklenmez. "
+    "Biletler için: https://ebilet.tcddtasimacilik.gov.tr"
+)
+
 
 def tcdd_deeplink(from_name: str, to_name: str, day: date) -> str:
     # ebilet.tcddtasimacilik.gov.tr accepts route params via the search page

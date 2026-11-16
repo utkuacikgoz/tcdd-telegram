@@ -23,7 +23,7 @@ import httpx
 
 from . import format as fmt
 from .store import Alarm, Store
-from .tcdd import TcddBackend, TrainResult
+from .tcdd import CaptchaRequiredError, TcddBackend, TrainResult
 
 log = logging.getLogger(__name__)
 
@@ -83,8 +83,19 @@ async def cleanup_stale(store: Store, tz: ZoneInfo) -> int:
     return n
 
 
+DOWN_MSG = "⚠️ TCDD'ye ulaşılamıyor — alarm kontrolü şu an çalışmıyor olabilir."
+CAPTCHA_MSG = (
+    "⚠️ TCDD sefer sorgusu captcha istiyor — alarm kontrolü durdu. "
+    "Her döngüde tek bir deneme yapılıyor; captcha kalkınca kendiliğinden düzelir."
+)
+
+
 async def _update_health(
-    store: Store, bot_token: str, admin_chat_id: int | None, degraded: bool
+    store: Store,
+    bot_token: str,
+    admin_chat_id: int | None,
+    degraded: bool,
+    reason: str = DOWN_MSG,
 ) -> None:
     """Alert the admin only on a health transition (down/recovered), so it
     doesn't spam every cycle while TCDD is down."""
@@ -95,10 +106,7 @@ async def _update_health(
     if not admin_chat_id:
         return
     if degraded:
-        await send_telegram(
-            bot_token, admin_chat_id,
-            "⚠️ TCDD'ye ulaşılamıyor — alarm kontrolü şu an çalışmıyor olabilir.",
-        )
+        await send_telegram(bot_token, admin_chat_id, reason)
     else:
         await send_telegram(
             bot_token, admin_chat_id,
@@ -152,6 +160,12 @@ async def run_once(
                 from_name=names.get(q[0], ""),
                 to_name=names.get(q[1], ""),
             )
+        except CaptchaRequiredError:
+            # Every query would hit the same wall — stop after one probe so we
+            # don't hammer TCDD each cycle. Nothing to alert on this round.
+            log.warning("checker: TCDD requires captcha; skipping this cycle")
+            await _update_health(store, bot_token, admin_chat_id, True, CAPTCHA_MSG)
+            return
         except Exception:
             log.exception("search failed for %s", q)
             results[q] = []

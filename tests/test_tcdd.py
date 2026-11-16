@@ -162,3 +162,26 @@ async def test_stub_backend_deterministic_and_wheelchair_free():
     for t in r1:
         assert "TEKERLEKLİ SANDALYE" not in t.cabin_breakdown
         assert t.available_seats == sum(t.cabin_breakdown.values())
+
+
+async def test_live_search_raises_captcha_required_without_retry(monkeypatch):
+    from tcdd_bot.tcdd import CaptchaRequiredError
+
+    monkeypatch.setattr("asyncio.sleep", _instant_sleep)
+    be = LiveBackend()
+    captcha = _FakeResp(400, {"type": "CAPTCHA", "code": 3877201}, text="captcha")
+    be._session = _FakeSession([captcha, _FakeResp(200, _wrap([]))])
+    with pytest.raises(CaptchaRequiredError):
+        await be.search(1, 2, date(2026, 7, 5), 1)
+    assert be._session.calls == 1
+
+
+async def test_live_search_plain_400_is_not_captcha(monkeypatch):
+    from tcdd_bot.tcdd import CaptchaRequiredError
+
+    monkeypatch.setattr("asyncio.sleep", _instant_sleep)
+    be = LiveBackend()
+    be._session = _FakeSession([_FakeResp(400, {"code": 1}, text="bad")])
+    with pytest.raises(RuntimeError) as ei:
+        await be.search(1, 2, date(2026, 7, 5), 1)
+    assert not isinstance(ei.value, CaptchaRequiredError)

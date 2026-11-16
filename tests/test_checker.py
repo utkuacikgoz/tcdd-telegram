@@ -276,3 +276,38 @@ async def test_run_once_skips_when_seats_below_passengers(store, monkeypatch):
 
     await checker.run_once(store, backend, "tok", TZ)
     assert sent == []
+
+
+class _CaptchaBackend:
+    def __init__(self):
+        self.calls = 0
+
+    async def search(self, *a, **k):
+        from tcdd_bot.tcdd import CaptchaRequiredError
+
+        self.calls += 1
+        raise CaptchaRequiredError("captcha")
+
+
+async def test_run_once_stops_after_first_captcha_and_alerts_admin_once(store, monkeypatch):
+    notes = []
+
+    async def fake_send(token, chat_id, text):
+        notes.append((chat_id, text))
+
+    monkeypatch.setattr(checker, "send_telegram", fake_send)
+    monkeypatch.setattr(checker.random, "uniform", lambda a, b: 0)
+
+    d1 = date.today() + timedelta(days=3)
+    d2 = date.today() + timedelta(days=4)
+    await store.create_alarm(42, 1, 2, "A", "B", [d1, d2], 1)
+
+    be = _CaptchaBackend()
+    await checker.run_once(store, be, "tok", TZ, admin_chat_id=999)
+    assert be.calls == 1  # one probe, not one per query
+    assert await store.is_checker_degraded() is True
+    assert notes == [(999, checker.CAPTCHA_MSG)]
+
+    notes.clear()
+    await checker.run_once(store, be, "tok", TZ, admin_chat_id=999)
+    assert notes == []  # transition-based, no repeat

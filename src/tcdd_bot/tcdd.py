@@ -30,6 +30,16 @@ TMS_URL = (
 
 MAX_SEARCH_ATTEMPTS = 3
 
+# Since Nov 2026 TCDD gates train-availability behind a Cloudflare Turnstile
+# captcha (plus CSRF). A request without a solved captcha token gets HTTP 400
+# {"type": "CAPTCHA", "code": 3877201, "messageKey": "E02.CAPTCHA_REQUIRED"}.
+# These are the codes TCDD's own frontend treats as "captcha needed".
+CAPTCHA_ERROR_CODES = frozenset({3877201, 3877202, 3877203})
+
+
+class CaptchaRequiredError(RuntimeError):
+    """TCDD demanded a captcha. Automated search is blocked until it stops."""
+
 # JWT extracted from the TCDD production JS bundle. The exp claim is in the
 # past, but the TCDD gateway doesn't validate it — the page in production
 # uses the same hardcoded token. If TCDD ever rotates it, re-extract from
@@ -172,6 +182,9 @@ class LiveBackend:
             else:
                 if r.status_code < 400:
                     return _parse_response(r.json(), include_unavailable)
+                if _is_captcha_response(r):
+                    log.warning("TCDD search requires captcha: %s", r.text[:200])
+                    raise CaptchaRequiredError("TCDD requires captcha")
                 if r.status_code < 500 and r.status_code != 429:
                     log.warning("TCDD search %s -> %s", r.status_code, r.text[:200])
                     raise RuntimeError(f"TCDD HTTP {r.status_code}")
@@ -183,6 +196,18 @@ class LiveBackend:
             if attempt < MAX_SEARCH_ATTEMPTS:
                 await asyncio.sleep(min(8.0, 0.5 * 2 ** (attempt - 1)) + random.uniform(0, 0.5))
         raise last_exc or RuntimeError("TCDD search failed")
+
+
+def _is_captcha_response(r) -> bool:
+    if r.status_code not in (400, 403):
+        return False
+    try:
+        body = r.json()
+    except Exception:
+        return False
+    if not isinstance(body, dict):
+        return False
+    return body.get("type") == "CAPTCHA" or body.get("code") in CAPTCHA_ERROR_CODES
 
 
 def _parse_response(data: dict, include_unavailable: bool = False) -> list[TrainResult]:
